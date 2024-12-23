@@ -21,3 +21,4 @@ finally:
 
 
 https://hailo.ai/developer-zone/software-downloads/
+https://wiki.seeedstudio.com/tutorial_of_ai_kit_with_raspberrypi5_about_yolov8n_object_detection/

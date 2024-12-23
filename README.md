@@ -8,3 +8,6 @@ model.export(format="onnx", imgsz=640)  # 입력 이미지 크기 설정 (예: 6
 
 sudo update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.9 1
 sudo update-alternatives --config python3
+
+
+yolo export model=/home/kkymin/Downloads/best.pt imgsz=640 format=onnx opset=11

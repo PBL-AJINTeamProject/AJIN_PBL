@@ -18,3 +18,6 @@ try:
 finally:
     cv2.destroyAllWindows()
     picam2.stop()
+
+
+https://hailo.ai/developer-zone/software-downloads/

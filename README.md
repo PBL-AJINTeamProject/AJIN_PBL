@@ -9,3 +9,4 @@ model.export(format="onnx", imgsz=640)  # 입력 이미지 크기 설정 (예: 6
 wget https://hailo.ai/install-sdk.sh
 bash install-sdk.sh
 
+python -c "from ultralytics import YOLO; print('Ultralytics 설치 완료')"

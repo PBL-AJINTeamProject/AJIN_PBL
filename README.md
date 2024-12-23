@@ -1,25 +1,7 @@
-from picamera2 import Picamera2
-import cv2
+from ultralytics import YOLO
 
-picam2 = Picamera2()
-config = picam2.create_preview_configuration(main={"size": (640, 480)})
-picam2.configure(config)
-picam2.set_controls({"AfMode": 2})
+# YOLOv8s 모델 로드
+model = YOLO('yolov8s.pt')  # 이미 학습된 YOLOv8 모델
 
-picam2.start()
-
-try:
-    while True:
-        frame = picam2.capture_array()
-        frame_bgr = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
-        cv2.imshow("Camera Preview", frame_bgr)
-        if cv2.waitKey(1) & 0xFF == ord('q'):
-            break
-finally:
-    cv2.destroyAllWindows()
-    picam2.stop()
-
-
-https://hailo.ai/developer-zone/software-downloads/
-https://wiki.seeedstudio.com/tutorial_of_ai_kit_with_raspberrypi5_about_yolov8n_object_detection/
-https://empirecity.tistory.com/182
+# ONNX 형식으로 변환
+model.export(format="onnx", imgsz=640)  # 입력 이미지 크기 설정 (예: 640x640)

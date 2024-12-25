@@ -5,59 +5,47 @@ https://github.com/hailo-ai/hailo_model_zoo?tab=readme-ov-file
 https://github.com/hailo-ai/hailo_model_zoo/blob/master/docs/public_models/HAILO8L/HAILO8L_object_detection.rst
 
 
-import hailo_platform
-
-# Hailo 장치 연결
-try:
-    device = hailo_platform.Device()  # Hailo 장치 초기화
-    print("Hailo device connected successfully!")
-except Exception as e:
-    print(f"Failed to connect to Hailo device: {e}")
-    exit(1)
-
-# HEF 파일 경로 설정
-hef_path = "path/to/your_model.hef"  # HEF 파일 경로 입력
-
-# HEF 파일 로드
-try:
-    hef = hailo_platform.Hef(hef_path)
-    print(f"HEF file '{hef_path}' loaded successfully!")
-except Exception as e:
-    print(f"Failed to load HEF file: {e}")
-    exit(1)
-
-# 모델 구성
-try:
-    network_group = device.configure(hef)
-    print("Network group configured successfully!")
-except Exception as e:
-    print(f"Failed to configure the network group: {e}")
-    exit(1)
-
-# 입력 크기 확인
-input_shapes = network_group.get_input_vstream_shapes()
-print(f"Input shapes: {input_shapes}")
-
-# 출력 크기 확인
-output_shapes = network_group.get_output_vstream_shapes()
-print(f"Output shapes: {output_shapes}")
-
-# 가상 스트림 설정
-vstream_manager = hailo_platform.VStreamsManager(network_group)
-
-# 추론 테스트
+from hailo_platform import HEF, Device, InputVStreams, OutputVStreams
+import cv2
 import numpy as np
 
-# 입력 데이터 생성 (랜덤 값)
-input_data = {
-    name: np.random.rand(*shape).astype(np.float32) 
-    for name, shape in input_shapes.items()
-}
+# 1. HEF 파일 및 장치 초기화
+hef_path = "object_detection_model.hef"
+with Device() as device:
+    hef = HEF(hef_path)
+    configure_params = hef.create_configure_params()
+    network_group = device.configure(hef, configure_params)
 
-# 추론 실행
-try:
-    output_data = vstream_manager.run(input_data)
-    print("Inference completed successfully!")
-    print(f"Output data: {output_data}")
-except Exception as e:
-    print(f"Failed to execute inference: {e}")
+    # 2. 입력/출력 스트림 구성
+    input_vstreams = InputVStreams(network_group)
+    output_vstreams = OutputVStreams(network_group)
+
+    # 3. 실시간 데이터 캡처 및 전처리
+    cap = cv2.VideoCapture(0)  # 웹캠 연결
+    while True:
+        ret, frame = cap.read()
+        if not ret:
+            break
+
+        # 입력 데이터 전처리 (모델 크기와 일치)
+        resized_frame = cv2.resize(frame, (300, 300))  # 모델에 맞는 입력 크기
+        input_data = np.expand_dims(resized_frame, axis=0)
+
+        # 4. 모델 실행 (입력 전송 및 결과 수신)
+        input_vstreams[0].send(input_data)
+        output_data = output_vstreams[0].receive()
+
+        # 5. 출력 데이터 처리 및 시각화
+        detections = parse_detections(output_data)  # 사용자 정의 함수로 데이터 해석
+        for x, y, w, h, conf, class_id in detections:
+            label = f"Class {class_id}: {conf:.2f}"
+            cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
+            cv2.putText(frame, label, (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 2)
+
+        cv2.imshow("Object Detection", frame)
+
+        if cv2.waitKey(1) & 0xFF == ord('q'):  # 'q'를 누르면 종료
+            break
+
+    cap.release()
+    cv2.destroyAllWindows()

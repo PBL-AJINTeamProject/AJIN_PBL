@@ -14,3 +14,4 @@ source setup_env.sh
 
 python3 basic_pipelines/detection.py --hef-path resources/best2.hef --input rpi --labels-json resources/barcode-labels.json
 
+ffmpeg -video_size 1920x1080 -framerate 30 -f x11grab -i :0.0 -c:v libx264 -preset veryfast output.mp4

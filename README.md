@@ -12,6 +12,7 @@ cd hailo-rpi5-examples
 source setup_env.sh
 
 
-python3 basic_pipelines/detection.py --hef-path resources/best2.hef --input rpi --labels-json resources/barcode-labels.json
+python3 basic_pipelines/detection.py --hef-path resources/Detection_Person.hef --input rpi --labels-json resources/Detection_Person.json
+
 
 ffmpeg -video_size 1920x1080 -framerate 30 -f x11grab -i :0.0 -c:v libx264 -preset veryfast output.mp4

@@ -72,9 +72,26 @@ def app_callback(pad, info, user_data):
     if user_data.use_frame and format is not None and width is not None and height is not None:
         frame = get_numpy_from_buffer(buffer, format, width, height)
 
-    # 화면 절반의 중간 x 좌표 계산 (ROI 시각화)
-    mid_x = width // 2
-    cv2.line(frame, (mid_x, 0), (mid_x, height), (255, 0, 0), 2)  # 중간 경계선 그리기 (파란색)
+    # ROI 영역을 정의합니다
+    roi_points = np.array([(50, 50), (400, 50), (400, 300), (50, 300)], np.int32)
+
+    # 프레임이 None이 아닌 경우에만 작업 수행
+    if frame is not None:
+        # 프레임 크기 출력
+        height, width, _ = frame.shape
+        print(f"Frame size: width={width}, height={height}")
+
+        # ROI 좌표 출력
+        print(f"ROI Points: {roi_points}")
+
+        # ROI를 노란색 두꺼운 선으로 그리기
+        cv2.polylines(frame, [roi_points], isClosed=True, color=(0, 255, 255), thickness=3)  # 두께 3
+
+        # ROI 내부를 반투명하게 채우기
+        overlay = frame.copy()
+        cv2.fillPoly(overlay, [roi_points], color=(0, 255, 255))  # 노란색 채우기
+        alpha = 0.3  # 투명도 설정 (0.0 ~ 1.0, 낮을수록 투명)
+        frame = cv2.addWeighted(overlay, alpha, frame, 1 - alpha, 0)
 
     # Get the detections from the buffer
     roi = hailo.get_roi_from_buffer(buffer)
@@ -85,37 +102,39 @@ def app_callback(pad, info, user_data):
     person_detected = False  # 사람이 탐지되었는지 여부
     for detection in detections:
         label = detection.get_label()
-        bbox = detection.get_bbox()  # 바운딩 박스 좌표
+        bbox = detection.get_bbox()
         confidence = detection.get_confidence()
 
+        # Bounding box 좌표 추출 및 변환 (정규화된 좌표 → 픽셀 좌표)
+        xmin = int(bbox.xmin() * width)
+        ymin = int(bbox.ymin() * height)
+        xmax = int(bbox.xmax() * width)
+        ymax = int(bbox.ymax() * height)
+
+        # 사람 감지된 객체가 ROI 영역에 포함되는지 확인
         if label == "Person":
-            string_to_print += f"Detection: {label} {confidence:.2f}\n"
-            detection_count += 1
+            center_x = (xmin + xmax) // 2
+            center_y = (ymin + ymax) // 2
+            in_roi = cv2.pointPolygonTest(roi_points, (center_x, center_y), False)
+            
+            # 디버깅 출력
+            print(f"Person detected: {label}, Confidence: {confidence:.2f}")
+            print(f"Bounding Box: xmin={xmin}, ymin={ymin}, xmax={xmax}, ymax={ymax}")
+            print(f"Center: ({center_x}, {center_y}), In ROI: {in_roi}")
 
-            # 바운딩 박스 중심 x 좌표 계산
-            x_min = bbox.x_min * width
-            x_max = bbox.x_max * width
-            center_x = (x_min + x_max) / 2
-
-            # 사람이 왼쪽 절반에 있을 때만 LED 켜기
-            if center_x < mid_x:
+            # ROI 영역에 포함된 경우만 LED 제어
+            if in_roi >= 0:
+                string_to_print += f"Detection: {label} {confidence:.2f}\n"
+                detection_count += 1
                 person_detected = True
-
-            # 바운딩 박스를 영상에 표시
-            y_min = bbox.y_min * height
-            y_max = bbox.y_max * height
-            cv2.rectangle(frame, (int(x_min), int(y_min)), (int(x_max), int(y_max)), (0, 255, 0), 2)
-            cv2.putText(frame, f"{label}: {confidence:.2f}", (int(x_min), int(y_min) - 10),
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
 
     # LED 제어 (비동기)
     if person_detected and not led_active:  # LED가 꺼져 있는 경우에만 실행
-        print("사람이 왼쪽에서 감지되었습니다! LED 켜기")
+        print("사람이 감지되었습니다! LED 켜기")
         led_thread = Thread(target=control_leds, args=(leds, 5))  # LED를 5초 동안 켜기
         led_thread.start()  # 쓰레드 실행
 
     if user_data.use_frame:
-        # 화면 상단에 탐지 결과 출력
         cv2.putText(frame, f"Detections: {detection_count}", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
         frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
         user_data.set_frame(frame)

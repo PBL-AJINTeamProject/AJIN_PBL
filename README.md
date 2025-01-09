@@ -13,5 +13,4 @@ source setup_env.sh
 
 python3 basic_pipelines/detection.py --hef-path resources/Detection_Person.hef --input /dev/video0 --labels-json resources/Detection_Person.json
 
-
-https://github.com/adafruit/Adafruit_CircuitPython_NeoPixel_SPI
+https://nan-sso-gong.tistory.com/m/6

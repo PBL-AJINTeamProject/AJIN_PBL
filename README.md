@@ -21,3 +21,6 @@ picam2.stop()
 
 
 /usr/share/rpi-camera-assets
+
+sudo chmod +w /usr/share/rpi-camera-assets/hailo_yolov6_inference.json
+sudo mv /usr/share/rpi-camera-assets/hailo_yolov6_inference.json /usr/share/rpi-camera-assets/hailo_yolov6_inference.py

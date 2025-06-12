@@ -18,3 +18,6 @@ picam2 = Picamera2()
 picam2.start()
 sleep(5)  # 5초간 실행
 picam2.stop()
+
+
+/usr/share/rpi-camera-assets

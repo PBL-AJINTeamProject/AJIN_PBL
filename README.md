@@ -6,6 +6,9 @@ source setup_env.sh
 
 python3 basic_pipelines/detection.py --hef-path resources/Detection_Person.hef --input /dev/video0 --labels-json resources/Detection_Person.json
 
+python3 basic_pipelines/detection.py --hef-path resources/Detection_Person.hef --input rpi --labels-json resources/Detection_Person.json
+
+
 
 sudo apt update
 sudo apt install -y python3-picamera2 python3-libcamera libcamera-apps
